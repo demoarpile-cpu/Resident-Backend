@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import * as bankController from '../controllers/bank.controller.js';
+const router = Router();
+router.get('/', bankController.getTransactions);
+router.post('/upload', bankController.uploadCSV);
+router.post('/match', bankController.matchTransaction);
+router.post('/reconcile-auto', bankController.autoReconcile);
+router.post('/unmatch/:id', bankController.unmatchTransaction);
+router.delete('/:id', bankController.deleteTransaction);
+export default router;

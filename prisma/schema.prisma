@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model House {
+  id        String     @id @default(uuid())
+  name      String     @unique(map: "House_name_key")
+  type      String?
+  status    String     @default("Vacant")
+  createdAt DateTime   @default(now())
+  residents Resident[]
+
+  @@map("house")
+}
+
+model Resident {
+  id               String             @id @default(uuid())
+  name             String
+  email            String             @unique(map: "Resident_email_key")
+  debtorNumber     String?
+  address                 String?
+  billingAddress          String?
+  serviceRecipient        String?
+  serviceRecipientAddress String?
+  houseId                 String
+  startDate        DateTime
+  creditBalance    Float              @default(0)
+  reminderLevel    Int                @default(0)
+  lastReminderDate DateTime?
+  createdAt        DateTime           @default(now())
+  aliases          Alias[]
+  charges          Charge[]
+  chargeDefs       ChargeDefinition[]
+  notes            Note[]
+  payments         Payment[]
+  reminders        Reminder[]
+  house            House              @relation(fields: [houseId], references: [id])
+
+  @@index([houseId], map: "resident_houseId_fkey")
+  @@map("resident")
+}
+
+model Note {
+  id         String   @id @default(uuid())
+  text       String   @db.Text
+  author     String   @default("Admin")
+  residentId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  @@index([residentId], map: "note_residentId_fkey")
+  @@map("note")
+}
+
+model ChargeDefinition {
+  id          String   @id @default(uuid())
+  residentId  String
+  type        String
+  amount      Float
+  startDate   DateTime
+  billingType String   @default("recurring")
+  createdAt   DateTime @default(now())
+  resident    Resident @relation(fields: [residentId], references: [id])
+
+  @@index([residentId], map: "chargedefinition_residentId_fkey")
+  @@map("chargedefinition")
+}
+
+model Charge {
+  id          String              @id @default(uuid())
+  residentId  String
+  type        String
+  amount      Float
+  month       String
+  date        DateTime?           @default(now())
+  dueDate     DateTime?
+  billingType String              @default("recurring")
+  status      String              @default("UNPAID")
+  paidAmount  Float               @default(0)
+  createdAt   DateTime            @default(now())
+  description String?
+  isManual    Boolean             @default(true)
+  invoiceFile String?             @db.LongText
+  resident    Resident            @relation(fields: [residentId], references: [id])
+  allocations PaymentAllocation[]
+
+  @@index([residentId], map: "charge_residentId_fkey")
+  @@map("charge")
+}
+
+model Payment {
+  id          String              @id @default(uuid())
+  residentId  String
+  amount      Float
+  date        DateTime
+  method      String
+  createdAt   DateTime            @default(now())
+  note        String?
+  resident    Resident            @relation(fields: [residentId], references: [id])
+  allocations PaymentAllocation[]
+
+  @@index([residentId], map: "payment_residentId_fkey")
+  @@map("payment")
+}
+
+model PaymentAllocation {
+  id        String   @id @default(uuid())
+  paymentId String
+  chargeId  String
+  amount    Float
+  createdAt DateTime @default(now())
+  charge    Charge   @relation(fields: [chargeId], references: [id], onDelete: Cascade)
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([chargeId], map: "paymentallocation_chargeId_fkey")
+  @@index([paymentId], map: "paymentallocation_paymentId_fkey")
+  @@map("paymentallocation")
+}
+
+model BankTransaction {
+  id          String   @id @default(uuid())
+  description String
+  amount      Float
+  date        DateTime
+  reference   String?
+  status      String   @default("UNMATCHED")
+  createdAt   DateTime @default(now())
+  paymentId   String?  @unique(map: "BankTransaction_paymentId_key")
+
+  @@map("banktransaction")
+}
+
+model Alias {
+  id          String   @id @default(uuid())
+  description String   @unique(map: "Alias_description_key")
+  residentId  String
+  createdAt   DateTime @default(now())
+  resident    Resident @relation(fields: [residentId], references: [id])
+
+  @@index([residentId], map: "alias_residentId_fkey")
+  @@map("alias")
+}
+
+model Reminder {
+  id         String   @id @default(uuid())
+  residentId String
+  type       String?  @default("Manual")
+  date       DateTime @default(now())
+  status     String?  @default("SENT")
+  createdAt  DateTime @default(now())
+  resident   Resident @relation(fields: [residentId], references: [id], onDelete: Cascade)
+
+  @@index([residentId], map: "reminder_residentId_fkey")
+  @@map("reminder")
+}
+
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique(map: "SystemConfig_key_key")
+  value     String   @db.LongText
+  updatedAt DateTime @updatedAt
+
+  @@map("systemconfig")
+}
+
+model Integration {
+  id          String   @id @default(uuid())
+  name        String   @unique(map: "Integration_name_key")
+  description String?
+  status      String   @default("DISCONNECTED")
+  connected   Boolean  @default(false)
+  icon        String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("integration")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique(map: "User_email_key")
+  password  String
+  avatar    String?  @db.LongText
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user")
+}
