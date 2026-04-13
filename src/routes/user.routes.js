@@ -6,6 +6,8 @@ const router = express.Router();
 
 // Public routes
 router.post('/login', userController.login);
+router.post('/forgot-password', userController.forgotPassword);
+router.post('/reset-password', userController.resetPassword);
 
 // Protected routes
 router.get('/me', authMiddleware, userController.getProfile);

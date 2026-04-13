@@ -43,25 +43,33 @@ export const updateIntegration = async (id, data) => {
 // Seed initial configurations and integrations if they don't exist
 export const seedSystemConfig = async () => {
   // Seed Integrations
-  const intCount = await prisma.integration.count();
-  if (intCount === 0) {
-    await prisma.integration.createMany({
-      data: [
-        { name: 'Bank Connection', description: 'Reconcile statement CSVs automatically.', status: 'CONNECTED', connected: true, icon: 'Globe' },
-        { name: 'DATEV Export', description: 'Standard accounting exports formats support.', status: 'DISCONNECTED', connected: false, icon: 'FileText' },
-        { name: 'Email Service', description: 'Send automated tenant notifications setups.', status: 'CONNECTED', connected: true, icon: 'Mail' }
-      ]
-    });
+  const integrations = [
+    { name: 'Bank Connection', description: 'Reconcile statement CSVs automatically.', status: 'CONNECTED', connected: true, icon: 'Globe' },
+    { name: 'DATEV Export', description: 'Standard accounting exports formats support.', status: 'DISCONNECTED', connected: false, icon: 'FileText' },
+    { name: 'Email Service', description: 'Send automated tenant notifications setups.', status: 'CONNECTED', connected: true, icon: 'Mail' }
+  ];
+
+  for (const int of integrations) {
+    const exists = await prisma.integration.findFirst({ where: { name: int.name } });
+    if (!exists) {
+      await prisma.integration.create({ data: int });
+    }
   }
 
   // Seed Defaults
-  const configCount = await prisma.systemConfig.count();
-  if (configCount === 0) {
-    await prisma.systemConfig.createMany({
-      data: [
-        { key: 'billing_reminder_template', value: 'Dear {Name},\n\nWe would like to remind you that your account currently has an outstanding balance of {Amount}.\n\nPlease ensure this is settled at your earliest convenience to avoid further action.\n\nThank you.' },
-        { key: 'billing_signature', value: 'Best regards,\nBilling Department' }
-      ]
+  const defaults = [
+    { key: 'billing_reminder_template', value: 'Dear {Name},\n\nWe would like to remind you that your account currently has an outstanding balance of {Amount}.\n\nPlease ensure this is settled at your earliest convenience to avoid further action.\n\nThank you.' },
+    { key: 'billing_signature', value: 'Best regards,\nBilling Department' },
+    { key: 'emailjs_service_id', value: 'service_ze5zfwu' },
+    { key: 'emailjs_template_id', value: 'template_h1n7gqa' },
+    { key: 'emailjs_public_key', value: 'I3fOfZW70y32ceu5q' }
+  ];
+
+  for (const item of defaults) {
+    await prisma.systemConfig.upsert({
+      where: { key: item.key },
+      update: {}, // Don't overwrite if exists
+      create: item
     });
   }
 

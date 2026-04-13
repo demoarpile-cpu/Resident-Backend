@@ -1,11 +1,10 @@
-import * as chargeService from '../services/charge.service.js';
 import * as dashboardService from '../services/dashboard.service.js';
 
 export const getStats = async (req, res) => {
   try {
-    // Automatically generate due charges for all residents before fetching stats
-    await chargeService.globalSyncCharges();
-    
+    // NOTE: globalSyncCharges removed from here - it was exhausting the DB connection pool
+    // by running N sequential queries per resident on every dashboard load.
+    // Charges are synced individually when viewing a resident's ledger page.
     const stats = await dashboardService.getStats();
     res.json({ success: true, data: stats });
   } catch (error) {

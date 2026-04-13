@@ -19,27 +19,27 @@ model House {
 }
 
 model Resident {
-  id               String             @id @default(uuid())
-  name             String
-  email            String             @unique(map: "Resident_email_key")
-  debtorNumber     String?
+  id                      String             @id @default(uuid())
+  name                    String
+  email                   String             @unique(map: "Resident_email_key")
+  debtorNumber            String?
   address                 String?
   billingAddress          String?
+  houseId                 String
+  startDate               DateTime
+  creditBalance           Float              @default(0)
+  reminderLevel           Int                @default(0)
+  lastReminderDate        DateTime?
+  createdAt               DateTime           @default(now())
   serviceRecipient        String?
   serviceRecipientAddress String?
-  houseId                 String
-  startDate        DateTime
-  creditBalance    Float              @default(0)
-  reminderLevel    Int                @default(0)
-  lastReminderDate DateTime?
-  createdAt        DateTime           @default(now())
-  aliases          Alias[]
-  charges          Charge[]
-  chargeDefs       ChargeDefinition[]
-  notes            Note[]
-  payments         Payment[]
-  reminders        Reminder[]
-  house            House              @relation(fields: [houseId], references: [id])
+  aliases                 Alias[]
+  charges                 Charge[]
+  chargeDefs              ChargeDefinition[]
+  notes                   Note[]
+  payments                Payment[]
+  reminders               Reminder[]
+  house                   House              @relation(fields: [houseId], references: [id])
 
   @@index([houseId], map: "resident_houseId_fkey")
   @@map("resident")
@@ -64,8 +64,8 @@ model ChargeDefinition {
   type        String
   amount      Float
   startDate   DateTime
-  billingType String   @default("recurring")
   createdAt   DateTime @default(now())
+  billingType String   @default("recurring")
   resident    Resident @relation(fields: [residentId], references: [id])
 
   @@index([residentId], map: "chargedefinition_residentId_fkey")
@@ -79,12 +79,12 @@ model Charge {
   amount      Float
   month       String
   date        DateTime?           @default(now())
-  dueDate     DateTime?
-  billingType String              @default("recurring")
   status      String              @default("UNPAID")
   paidAmount  Float               @default(0)
   createdAt   DateTime            @default(now())
   description String?
+  billingType String              @default("recurring")
+  dueDate     DateTime?
   isManual    Boolean             @default(true)
   invoiceFile String?             @db.LongText
   resident    Resident            @relation(fields: [residentId], references: [id])
@@ -182,13 +182,15 @@ model Integration {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique(map: "User_email_key")
-  password  String
-  avatar    String?  @db.LongText
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String    @id @default(uuid())
+  name                 String
+  email                String    @unique(map: "User_email_key")
+  password             String
+  avatar               String?   @db.LongText
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  resetPasswordExpires DateTime?
+  resetPasswordToken   String?
 
   @@map("user")
 }
