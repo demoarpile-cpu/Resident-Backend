@@ -177,3 +177,142 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// ==========================================
+// ADMIN: User Management Operations
+// ==========================================
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        permissions: true,
+        avatar: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ success: true, data: users });
+  } catch (error) {
+    console.error('[GET_ALL_USERS_ERROR]:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const createUser = async (req, res) => {
+  try {
+    const { name, email, password, role, permissions } = req.body;
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ success: false, error: 'User with this email already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: role || 'VIEWER',
+        permissions: permissions || {}
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        permissions: true,
+        createdAt: true
+      }
+    });
+
+    res.json({ success: true, data: newUser, message: 'User created successfully' });
+  } catch (error) {
+    console.error('[CREATE_USER_ERROR]:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, role, permissions, password } = req.body;
+
+    const dataToUpdate = { name, email, role, permissions };
+
+    if (password) {
+      dataToUpdate.password = await bcrypt.hash(password, 10);
+    }
+
+    if (email) {
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser && existingUser.id !== id) {
+        return res.status(400).json({ success: false, error: 'Email already in use by another user' });
+      }
+    }
+
+    // Safeguard: Prevent removing the last admin's admin status
+    if (role && role !== 'ADMIN') {
+      const userToUpdate = await prisma.user.findUnique({ where: { id } });
+      if (userToUpdate && userToUpdate.role === 'ADMIN') {
+        const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
+        if (adminCount <= 1) {
+          return res.status(400).json({ success: false, error: 'Cannot remove admin status from the only remaining admin' });
+        }
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: dataToUpdate,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        permissions: true,
+        updatedAt: true
+      }
+    });
+
+    res.json({ success: true, data: updatedUser, message: 'User updated successfully' });
+  } catch (error) {
+    console.error('[UPDATE_USER_ERROR]:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Prevent self-deletion
+    if (id === req.user.id) {
+      return res.status(400).json({ success: false, error: 'Cannot delete your own account' });
+    }
+
+    // Safeguard: Prevent deleting the last admin
+    const userToDelete = await prisma.user.findUnique({ where: { id } });
+    if (userToDelete && userToDelete.role === 'ADMIN') {
+      const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
+      if (adminCount <= 1) {
+        return res.status(400).json({ success: false, error: 'Cannot delete the only remaining admin user' });
+      }
+    }
+
+    await prisma.user.delete({
+      where: { id }
+    });
+
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('[DELETE_USER_ERROR]:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

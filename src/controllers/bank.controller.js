@@ -1,5 +1,15 @@
 import * as bankService from '../services/bank.service.js';
+import * as openbankingService from '../services/openbanking.service.js';
 
+export const syncApi = async (req, res) => {
+  try {
+    const result = await openbankingService.syncTransactions();
+    res.json(result);
+  } catch (error) {
+    console.error('API Sync Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 export const getTransactions = async (req, res) => {
   try {
     const transactions = await bankService.getTransactions();

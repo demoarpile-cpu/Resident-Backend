@@ -24,17 +24,29 @@ app.use((req, res, next) => {
   next();
 });
 
+import { authMiddleware, checkPermission } from './config/auth.middleware.js';
+
+const rbacMiddleware = (moduleName) => {
+  return [
+    authMiddleware,
+    (req, res, next) => {
+      const action = req.method === 'GET' ? 'view' : 'edit';
+      return checkPermission(moduleName, action)(req, res, next);
+    }
+  ];
+};
+
 // Routes
-app.use("/api/payments", paymentRoutes);
-app.use("/api/residents", residentRoutes);
+app.use("/api/payments", rbacMiddleware('payments'), paymentRoutes);
+app.use("/api/residents", rbacMiddleware('residents'), residentRoutes);
 app.use("/api/houses", houseRoutes);
 app.use("/api/charges", chargeRoutes);
-app.use("/api/bank", bankRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/reminders", remindersRoutes);
-app.use("/api/reports", reportsRoutes);
-app.use("/api/notes", noteRoutes);
+app.use("/api/bank", rbacMiddleware('bank'), bankRoutes);
+app.use("/api/dashboard", rbacMiddleware('dashboard'), dashboardRoutes);
+app.use("/api/reminders", rbacMiddleware('reminders'), remindersRoutes);
+app.use("/api/reports", rbacMiddleware('reports'), reportsRoutes);
+app.use("/api/notes", rbacMiddleware('residents'), noteRoutes);
 app.use("/api/settings", settingsRoutes);
-app.use("/api/user", userRoutes);
+app.use("/api/user", userRoutes); // user routes have public endpoints, handled internally
 
 export default app;

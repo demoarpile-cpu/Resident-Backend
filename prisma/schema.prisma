@@ -125,6 +125,7 @@ model PaymentAllocation {
 
 model BankTransaction {
   id          String   @id @default(uuid())
+  externalId  String?  @unique(map: "BankTransaction_externalId_key")
   description String
   amount      Float
   date        DateTime
@@ -187,6 +188,8 @@ model User {
   email                String    @unique(map: "User_email_key")
   password             String
   avatar               String?   @db.LongText
+  role                 String    @default("VIEWER")
+  permissions          Json?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   resetPasswordExpires DateTime?

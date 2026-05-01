@@ -7,4 +7,5 @@ router.post('/match', bankController.matchTransaction);
 router.post('/reconcile-auto', bankController.autoReconcile);
 router.post('/unmatch/:id', bankController.unmatchTransaction);
 router.delete('/:id', bankController.deleteTransaction);
+router.post('/sync', bankController.syncApi);
 export default router;

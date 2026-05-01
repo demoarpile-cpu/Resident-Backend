@@ -48,17 +48,28 @@ export const uploadTransactions = async (txs) => {
       
       // Check for existing transaction (Strict date match might be too hard, so we use a range or just description/amount if date is flaky)
       // For now, keep it simple but handle the Date object safely
-      const existing = await prisma.bankTransaction.findFirst({
-        where: {
-          date: txDate,
-          description: tx.description,
-          amount: parseFloat(tx.amount),
-        }
-      });
+      let existing = null;
+      if (tx.externalId) {
+        existing = await prisma.bankTransaction.findUnique({
+          where: { externalId: tx.externalId }
+        });
+      }
+
+      if (!existing) {
+        // Fallback to old heuristic if no externalId is provided (e.g., CSV upload)
+        existing = await prisma.bankTransaction.findFirst({
+          where: {
+            date: txDate,
+            description: tx.description,
+            amount: parseFloat(tx.amount),
+          }
+        });
+      }
 
       if (!existing) {
         await prisma.bankTransaction.create({
           data: {
+            externalId: tx.externalId || null,
             description: tx.description,
             amount: parseFloat(tx.amount),
             date: txDate,

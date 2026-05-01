@@ -16,9 +16,16 @@ export const seedAdminUser = async () => {
       data: {
         name: 'Admin',
         email: adminEmail,
-        password: hashedPassword
+        password: hashedPassword,
+        role: 'ADMIN'
       }
     });
     console.log('[SEED]: Admin user created successfully.');
+  } else if (existing.role !== 'ADMIN') {
+    console.log('[SEED]: Updating default user to ADMIN role...');
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: { role: 'ADMIN' }
+    });
   }
 };
